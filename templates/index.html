@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preditor Futebol - Calculadora de Apostas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            color: var(--light);
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .market-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .market-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .market-card.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent);
+        }
+        
+        .progress-bar {
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .confidence-high {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+        
+        .confidence-medium {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+        
+        .confidence-low {
+            background: linear-gradient(90deg, #ef4444, #f87171);
+        }
+        
+        .bet-suggestion {
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .bet-suggestion:hover {
+            transform: scale(1.02);
+        }
+        
+        .bet-high {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(52, 211, 153, 0.1));
+            border-left: 4px solid #10b981;
+        }
+        
+        .bet-medium {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.1));
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .bet-low {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(248, 113, 113, 0.1));
+            border-left: 4px solid #ef4444;
+        }
+        
+        .glow {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+        
+        input, select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-bottom: 2px solid var(--primary);
+        }
+        
+        .logo {
+            font-weight: 700;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .betway-badge {
+            background: linear-gradient(90deg, #00b4ff, #00ff9d);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        .market-analysis {
+            border-left: 4px solid;
+            padding-left: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .market-analysis.analyzing {
+            border-left-color: #f59e0b;
+        }
+        
+        .market-analysis.completed {
+            border-left-color: #10b981;
+        }
+        
+        .market-analysis.error {
+            border-left-color: #ef4444;
+        }
+        
+        .loading-dots:after {
+            content: '';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+        
+        .clear-btn {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+            transition: all 0.3s ease;
+        }
+        
+        .clear-btn:hover {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            transform: translateY(-2px);
+        }
+        
+        .team-recommendation {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-left: 8px;
+        }
+        
+        .recommend-home {
+            background: rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+            border: 1px solid #3b82f6;
+        }
+        
+        .recommend-away {
+            background: rgba(239, 68, 68, 0.3);
+            color: #f87171;
+            border: 1px solid #ef4444;
+        }
+        
+        .recommend-draw {
+            background: rgba(156, 163, 175, 0.3);
+            color: #d1d5db;
+            border: 1px solid #9ca3af;
+        }
+        
+        .action-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+        
+        .action-high {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+        }
+        
+        .action-medium {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            color: white;
+        }
+        
+        .action-low {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+            color: white;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8">
+            <div class="flex items-center mb-4 md:mb-0">
+                <i class="fas fa-futbol text-3xl mr-3 text-blue-400"></i>
+                <h1 class="text-3xl font-bold logo">PreditorFutebol</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="betway-badge flex items-center">
+                    <i class="fas fa-bolt mr-2"></i>
+                    <span>Betway Integrado</span>
+                </div>
+                <button id="refreshBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    Atualizar Dados
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Input Section -->
+            <div class="lg:col-span-1">
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold flex items-center">
+                            <i class="fas fa-sliders-h mr-2 text-blue-400"></i>
+                            Configuração da Partida
+                        </h2>
+                        <button id="clearBtn" class="clear-btn text-white px-4 py-2 rounded-lg transition flex items-center">
+                            <i class="fas fa-eraser mr-2"></i>
+                            Limpar Tudo
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Time da Casa</label>
+                            <input type="text" id="homeTeam" class="w-full p-3 rounded-lg" placeholder="Ex: Benfica" value="Benfica">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Time Visitante</label>
+                            <input type="text" id="awayTeam" class="w-full p-3 rounded-lg" placeholder="Ex: Porto" value="Porto">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Prob. Casa (%)</label>
+                                <input type="number" id="homeProb" class="w-full p-3 rounded-lg" min="0" max="100" value="45">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Odds Casa</label>
+                                <input type="number" id="homeOdds" class="w-full p-3 rounded-lg" step="0.01" value="2.20">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Prob. Empate (%)</label>
+                                <input type="number" id="drawProb" class="w-full p-3 rounded-lg" min="0" max="100" value="30">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Odds Empate</label>
+                                <input type="number" id="drawOdds" class="w-full p-3 rounded-lg" step="0.01" value="3.50">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Prob. Fora (%)</label>
+                                <input type="number" id="awayProb" class="w-full p-3 rounded-lg" min="0" max="100" value="25">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Odds Fora</label>
+                                <input type="number" id="awayOdds" class="w-full p-3 rounded-lg" step="0.01" value="3.10">
+                            </div>
+                        </div>
+                        
+                        <div class="pt-4 border-t border-gray-700">
+                            <h3 class="text-lg font-semibold mb-3">Probabilidades Adicionais</h3>
+                            
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Ambas Marcam (%)</label>
+                                    <input type="number" id="bothScoreProb" class="w-full p-3 rounded-lg" min="0" max="100" value="65">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Over 2.5 Golos (%)</label>
+                                    <input type="number" id="over25Prob" class="w-full p-3 rounded-lg" min="0" max="100" value="55">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">1ª Equipa a Marcar - Casa (%)</label>
+                                    <input type="number" id="firstGoalProb" class="w-full p-3 rounded-lg" min="0" max="100" value="48">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Total Cartões > 4.5 (%)</label>
+                                    <input type="number" id="cardsProb" class="w-full p-3 rounded-lg" min="0" max="100" value="40">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mt-6">
+                            <button id="calculateBtn" class="w-full bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-white font-bold py-3 rounded-lg transition flex items-center justify-center pulse">
+                                <i class="fas fa-calculator mr-2"></i>
+                                Calcular
+                            </button>
+                            <button id="quickFillBtn" class="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-bold py-3 rounded-lg transition flex items-center justify-center">
+                                <i class="fas fa-magic mr-2"></i>
+                                Preencher Auto
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Statistics Card -->
+                <div class="card p-6 mt-6">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-chart-bar mr-2 text-green-400"></i>
+                        Estatísticas do Modelo
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span>Precisão do Modelo</span>
+                                <span>72%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill confidence-high" style="width: 72%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span>ROI nos Últimos 30 Dias</span>
+                                <span>+8.5%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill confidence-medium" style="width: 65%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span>Taxa de Acerto GG/NG</span>
+                                <span>68%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill confidence-high" style="width: 68%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Results Section -->
+            <div class="lg:col-span-2">
+                <div class="card p-6">
+                    <div class="flex border-b border-gray-700 mb-6 overflow-x-auto">
+                        <div class="tab active" data-tab="predictions">
+                            <i class="fas fa-bullseye mr-2"></i>
+                            Previsões Principais
+                        </div>
+                        <div class="tab" data-tab="markets">
+                            <i class="fas fa-store mr-2"></i>
+                            Todos os Mercados
+                        </div>
+                        <div class="tab" data-tab="analysis">
+                            <i class="fas fa-chart-line mr-2"></i>
+                            Análise Detalhada
+                        </div>
+                    </div>
+                    
+                    <!-- Predictions Tab -->
+                    <div id="predictions-tab" class="tab-content active">
+                        <h2 class="text-2xl font-bold mb-2">Sugestões de Aposta</h2>
+                        <p class="text-gray-400 mb-6">Recomendações objetivas baseadas na análise de valor</p>
+                        
+                        <div id="suggestionsList" class="space-y-4">
+                            <!-- Suggestions will be populated by JavaScript -->
+                        </div>
+                        
+                        <div class="mt-8">
+                            <h3 class="text-xl font-bold mb-4 flex items-center">
+                                <i class="fas fa-trophy mr-2 text-yellow-400"></i>
+                                Mercado Recomendado
+                            </h3>
+                            
+                            <div id="recommendedMarket" class="p-4 rounded-lg bg-gradient-to-r from-blue-900/30 to-green-900/30 border border-blue-500/30 glow">
+                                <!-- Recommended market will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Markets Tab -->
+                    <div id="markets-tab" class="tab-content hidden">
+                        <h2 class="text-2xl font-bold mb-4">Todos os Mercados Disponíveis</h2>
+                        
+                        <div id="marketsList" class="space-y-4">
+                            <!-- Market analysis will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <!-- Analysis Tab -->
+                    <div id="analysis-tab" class="tab-content hidden">
+                        <h2 class="text-2xl font-bold mb-4">Análise Detalhada da Partida</h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="card p-4">
+                                <h3 class="text-lg font-bold mb-3 flex items-center">
+                                    <i class="fas fa-chart-pie mr-2 text-blue-400"></i>
+                                    Distribuição de Probabilidades
+                                </h3>
+                                <div class="h-64 flex items-center justify-center">
+                                    <canvas id="probabilityChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="card p-4">
+                                <h3 class="text-lg font-bold mb-3 flex items-center">
+                                    <i class="fas fa-balance-scale mr-2 text-green-400"></i>
+                                    Comparação de Valor
+                                </h3>
+                                <div class="h-64 flex items-center justify-center">
+                                    <canvas id="valueChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card p-4 mt-6">
+                            <h3 class="text-lg font-bold mb-3 flex items-center">
+                                <i class="fas fa-lightbulb mr-2 text-yellow-400"></i>
+                                Insights do Modelo
+                            </h3>
+                            <ul id="insightsList" class="space-y-2">
+                                <!-- Insights will be populated by JavaScript -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Betway Integration -->
+                <div class="card p-6 mt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold flex items-center">
+                            <i class="fas fa-bolt mr-2 text-green-400"></i>
+                            Integração Betway
+                        </h2>
+                        <span class="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center">
+                            <i class="fas fa-check mr-1"></i>
+                            Conectado
+                        </span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-4 rounded-lg bg-gray-800 text-center">
+                            <div class="text-2xl font-bold text-green-400">1.85</div>
+                            <div class="text-sm text-gray-400">Ambas Marcam - Sim</div>
+                        </div>
+                        <div class="p-4 rounded-lg bg-gray-800 text-center">
+                            <div class="text-2xl font-bold">2.20</div>
+                            <div class="text-sm text-gray-400">Casa - Vitória</div>
+                        </div>
+                        <div class="p-4 rounded-lg bg-gray-800 text-center">
+                            <div class="text-2xl font-bold">1.95</div>
+                            <div class="text-sm text-gray-400">Over 2.5 Golos</div>
+                        </div>
+                    </div>
+                    
+                    <button class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-3 rounded-lg transition flex items-center justify-center mt-4">
+                        <i class="fas fa-external-link-alt mr-2"></i>
+                        Abrir Betway para Apostar
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="mt-8 text-center text-gray-500 text-sm">
+            <p>PreditorFutebol &copy; 2023 - Ferramenta de análise para apostas desportivas. Aposte com responsabilidade.</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // DOM Elements
+        const calculateBtn = document.getElementById('calculateBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const quickFillBtn = document.getElementById('quickFillBtn');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const suggestionsList = document.getElementById('suggestionsList');
+        const marketsList = document.getElementById('marketsList');
+        const recommendedMarket = document.getElementById('recommendedMarket');
+        const insightsList = document.getElementById('insightsList');
+        
+        // Input elements
+        const homeTeamInput = document.getElementById('homeTeam');
+        const awayTeamInput = document.getElementById('awayTeam');
+        const homeProbInput = document.getElementById('homeProb');
+        const drawProbInput = document.getElementById('drawProb');
+        const awayProbInput = document.getElementById('awayProb');
+        const homeOddsInput = document.getElementById('homeOdds');
+        const drawOddsInput = document.getElementById('drawOdds');
+        const awayOddsInput = document.getElementById('awayOdds');
+        const bothScoreInput = document.getElementById('bothScoreProb');
+        const over25Input = document.getElementById('over25Prob');
+        const firstGoalInput = document.getElementById('firstGoalProb');
+        const cardsInput = document.getElementById('cardsProb');
+
+        // Market data
+        const markets = [
+            { id: '1x2', name: '1X2', icon: 'fa-trophy', description: 'Resultado final da partida' },
+            { id: 'chance-dupla', name: 'Chance Dupla', icon: 'fa-shield-alt', description: 'Duas opções de resultado' },
+            { id: 'gg-ng', name: 'Ambas A Marcar (GG/NG)', icon: 'fa-futbol', description: 'Ambas as equipas marcam' },
+            { id: 'total-golos', name: 'Total De Golos', icon: 'fa-chart-line', description: 'Over/Under de golos' },
+            { id: 'booking', name: 'Booking 1X2', icon: 'fa-clipboard-list', description: 'Cartões na partida' },
+            { id: 'empate-anula', name: 'Empate Anula Aposta', icon: 'fa-ban', description: 'Empate anula a aposta' },
+            { id: 'primeira-marcar', name: 'Primeira Equipa A Marcar', icon: 'fa-flag', description: 'Primeiro golo da partida' },
+            { id: 'impar-par', name: 'Total De Golos Ímpar/Par', icon: 'fa-divide', description: 'Número ímpar/par de golos' },
+            { id: 'primeira-parte', name: '1ª Parte - 1X2', icon: 'fa-clock', description: 'Resultado ao intervalo' },
+            { id: 'handicap', name: 'Handicap', icon: 'fa-balance-scale', description: 'Handicap asiático/europeu' },
+            { id: 'vencedor-total', name: 'Vencedor e total de golos', icon: 'fa-crown', description: 'Resultado e total combinados' },
+            { id: 'total-cartoes', name: 'Total de cartões', icon: 'fa-clipboard', description: 'Over/Under de cartões' },
+            { id: 'resto-partida', name: 'Qual equipe vencerá o resto da partida', icon: 'fa-forward', description: 'Resultado após momento atual' }
+        ];
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up tab switching
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+                    
+                    // Update active tab
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    // Show active content
+                    tabContents.forEach(content => {
+                        content.classList.add('hidden');
+                        content.classList.remove('active');
+                    });
+                    
+                    document.getElementById(`${tabId}-tab`).classList.remove('hidden');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                    
+                    // If markets tab is selected, populate markets
+                    if (tabId === 'markets') {
+                        populateMarkets();
+                    }
+                });
+            });
+            
+            // Set up calculate button
+            calculateBtn.addEventListener('click', calculatePredictions);
+            
+            // Set up refresh button
+            refreshBtn.addEventListener('click', refreshData);
+            
+            // Set up clear button
+            clearBtn.addEventListener('click', clearAllData);
+            
+            // Set up quick fill button
+            quickFillBtn.addEventListener('click', quickFillData);
+            
+            // Initialize with sample data
+            updateRecommendations();
+        });
+        
+        // Clear all input data
+        function clearAllData() {
+            if (confirm('Tem certeza que deseja limpar todos os dados?')) {
+                homeTeamInput.value = '';
+                awayTeamInput.value = '';
+                homeProbInput.value = '';
+                drawProbInput.value = '';
+                awayProbInput.value = '';
+                homeOddsInput.value = '';
+                drawOddsInput.value = '';
+                awayOddsInput.value = '';
+                bothScoreInput.value = '';
+                over25Input.value = '';
+                firstGoalInput.value = '';
+                cardsInput.value = '';
+                
+                // Clear recommendations
+                suggestionsList.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fas fa-info-circle mr-2"></i>Insira os dados da partida para ver recomendações</div>';
+                recommendedMarket.innerHTML = '<div class="text-center py-4 text-gray-400">Nenhuma recomendação disponível</div>';
+                
+                // Show success message
+                showNotification('Dados limpos com sucesso!', 'success');
+            }
+        }
+        
+        // Quick fill with sample data
+        function quickFillData() {
+            homeTeamInput.value = 'Benfica';
+            awayTeamInput.value = 'Porto';
+            homeProbInput.value = '48';
+            drawProbInput.value = '28';
+            awayProbInput.value = '24';
+            homeOddsInput.value = '2.15';
+            drawOddsInput.value = '3.40';
+            awayOddsInput.value = '3.25';
+            bothScoreInput.value = '62';
+            over25Input.value = '58';
+            firstGoalInput.value = '52';
+            cardsInput.value = '45';
+            
+            showNotification('Dados preenchidos automaticamente!', 'success');
+        }
+        
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            } text-white font-semibold`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Update recommendations based on input data
+        function updateRecommendations() {
+            const homeTeam = homeTeamInput.value || 'Casa';
+            const awayTeam = awayTeamInput.value || 'Fora';
+            const homeProb = parseFloat(homeProbInput.value) || 0;
+            const awayProb = parseFloat(awayProbInput.value) || 0;
+            const drawProb = parseFloat(drawProbInput.value) || 0;
+            
+            // Determine best 1X2 recommendation
+            let best1X2 = '';
+            let best1X2Prob = 0;
+            
+            if (homeProb > awayProb && homeProb > drawProb) {
+                best1X2 = homeTeam;
+                best1X2Prob = homeProb;
+            } else if (awayProb > homeProb && awayProb > drawProb) {
+                best1X2 = awayTeam;
+                best1X2Prob = awayProb;
+            } else {
+                best1X2 = 'Empate';
+                best1X2Prob = drawProb;
+            }
+            
+            // Generate recommendations based on probabilities
+            const recommendations = [
+                {
+                    market: '1X2',
+                    selection: best1X2,
+                    confidence: Math.min(95, Math.max(30, best1X2Prob + 20)),
+                    modelProb: best1X2Prob,
+                    impliedProb: Math.max(20, best1X2Prob - 5),
+                    edge: 5 + Math.random() * 10,
+                    odds: best1X2 === homeTeam ? (2.0 + Math.random() * 0.5).toFixed(2) : 
+                          best1X2 === awayTeam ? (2.8 + Math.random() * 0.7).toFixed(2) : 
+                          (3.2 + Math.random() * 0.8).toFixed(2),
+                    type: best1X2Prob > 45 ? 'high' : best1X2Prob > 35 ? 'medium' : 'low',
+                    teamRecommendation: best1X2 === homeTeam ? 'home' : best1X2 === awayTeam ? 'away' : 'draw'
+                },
+                {
+                    market: 'Ambas A Marcar (GG/NG)',
+                    selection: 'SIM',
+                    confidence: 78,
+                    modelProb: 65,
+                    impliedProb: 54,
+                    edge: 11,
+                    odds: 1.85,
+                    type: 'high',
+                    teamRecommendation: 'both'
+                },
+                {
+                    market: 'Total De Golos',
+                    selection: 'Over 2.5',
+                    confidence: 72,
+                    modelProb: 58,
+                    impliedProb: 48,
+                    edge: 10,
+                    odds: 2.08,
+                    type: 'high',
+                    teamRecommendation: 'over'
+                },
+                {
+                    market: 'Primeira Equipa A Marcar',
+                    selection: homeTeam,
+                    confidence: 68,
+                    modelProb: 52,
+                    impliedProb: 42,
+                    edge: 10,
+                    odds: 2.38,
+                    type: 'medium',
+                    teamRecommendation: 'home'
+                },
+                {
+                    market: 'Handicap -1',
+                    selection: homeTeam,
+                    confidence: 45,
+                    modelProb: 40,
+                    impliedProb: 38,
+                    edge: 2,
+                    odds: 2.10,
+                    type: 'low',
+                    teamRecommendation: 'home'
+                }
+            ];
+            
+            // Update suggestions list
+            updateSuggestionsList(recommendations);
+            
+            // Update recommended market
+            updateRecommendedMarket(recommendations[0], homeTeam, awayTeam);
+            
+            // Update insights
+            updateInsights(recommendations, homeTeam, awayTeam);
+        }
+        
+        // Update suggestions list
+        function updateSuggestionsList(recommendations) {
+            suggestionsList.innerHTML = '';
+            
+            recommendations.forEach(suggestion => {
+                const suggestionEl = document.createElement('div');
+                suggestionEl.className = `bet-suggestion bet-${suggestion.type}`;
+                
+                let actionText = '';
+                let actionClass = '';
+                
+                if (suggestion.confidence >= 70) {
+                    actionText = 'APOSTAR FORTE';
+                    actionClass = 'action-high';
+                } else if (suggestion.confidence >= 50) {
+                    actionText = 'CONSIDERAR APOSTA';
+                    actionClass = 'action-medium';
+                } else {
+                    actionText = 'EVITAR';
+                    actionClass = 'action-low';
+                }
+                
+                // Team recommendation badge
+                let teamBadge = '';
+                if (suggestion.teamRecommendation === 'home') {
+                    teamBadge = `<span class="team-recommendation recommend-home">${homeTeamInput.value || 'Casa'}</span>`;
+                } else if (suggestion.teamRecommendation === 'away') {
+                    teamBadge = `<span class="team-recommendation recommend-away">${awayTeamInput.value || 'Fora'}</span>`;
+                } else if (suggestion.teamRecommendation === 'draw') {
+                    teamBadge = `<span class="team-recommendation recommend-draw">Empate</span>`;
+                } else if (suggestion.teamRecommendation === 'both') {
+                    teamBadge = `<span class="team-recommendation recommend-home">Ambas</span>`;
+                } else if (suggestion.teamRecommendation === 'over') {
+                    teamBadge = `<span class="team-recommendation recommend-home">Over</span>`;
+                }
+                
+                suggestionEl.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <h3 class="font-bold text-lg">${suggestion.market}</h3>
+                                ${teamBadge}
+                            </div>
+                            <p class="text-gray-300 mb-2">${suggestion.selection}</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="bg-blue-500/20 text-blue-300 px-2 py-1 rounded text-xs">Modelo: ${suggestion.modelProb}%</span>
+                                <span class="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-xs">Mercado: ${suggestion.impliedProb}%</span>
+                                <span class="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs">Edge: +${suggestion.edge}%</span>
+                                <span class="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded text-xs">Odds: ${suggestion.odds}</span>
+                            </div>
+                        </div>
+                        <div class="text-right ml-4">
+                            <div class="text-2xl font-bold ${suggestion.confidence >= 70 ? 'text-green-400' : suggestion.confidence >= 50 ? 'text-yellow-400' : 'text-red-400'}">${suggestion.confidence}%</div>
+                            <div class="action-badge ${actionClass} mt-1">${actionText}</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar mt-3">
+                        <div class="progress-fill confidence-${suggestion.type}" style="width: ${suggestion.confidence}%"></div>
+                    </div>
+                `;
+                
+                suggestionsList.appendChild(suggestionEl);
+            });
+        }
+        
+        // Update recommended market
+        function updateRecommendedMarket(topSuggestion, homeTeam, awayTeam) {
+            let teamBadge = '';
+            if (topSuggestion.teamRecommendation === 'home') {
+                teamBadge = `<span class="team-recommendation recommend-home">${homeTeam}</span>`;
+            } else if (topSuggestion.teamRecommendation === 'away') {
+                teamBadge = `<span class="team-recommendation recommend-away">${awayTeam}</span>`;
+            } else if (topSuggestion.teamRecommendation === 'draw') {
+                teamBadge = `<span class="team-recommendation recommend-draw">Empate</span>`;
+            } else if (topSuggestion.teamRecommendation === 'both') {
+                teamBadge = `<span class="team-recommendation recommend-home">Ambas</span>`;
+            } else if (topSuggestion.teamRecommendation === 'over') {
+                teamBadge = `<span class="team-recommendation recommend-home">Over</span>`;
+            }
+            
+            recommendedMarket.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="flex items-center mb-2">
+                            <h4 class="text-lg font-bold">${topSuggestion.market}</h4>
+                            ${teamBadge}
+                        </div>
+                        <p class="text-gray-300">${topSuggestion.selection}</p>
+                        <p class="text-gray-400 text-sm mt-1">Probabilidade do modelo: ${topSuggestion.modelProb}% | Probabilidade implícita: ${topSuggestion.impliedProb}%</p>
+                        <div class="flex items-center mt-2">
+                            <span class="bg-green-500 text-white px-2 py-1 rounded text-sm font-bold mr-2">EDGE: +${topSuggestion.edge}%</span>
+                            <span class="bg-blue-500 text-white px-2 py-1 rounded text-sm font-bold">ODDS: ${topSuggestion.odds}</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-3xl font-bold text-green-400">${topSuggestion.confidence}%</div>
+                        <div class="text-sm text-gray-300">Confiança</div>
+                        <div class="action-badge action-high mt-1">APOSTAR FORTE</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Update insights
+        function updateInsights(recommendations, homeTeam, awayTeam) {
+            insightsList.innerHTML = '';
+            
+            const insights = [
+                `O mercado <strong>${recommendations[0].market}</strong> apresenta o maior valor identificado, com vantagem de <strong>+${recommendations[0].edge}%</strong>`,
+                `Recomendação principal: <strong>${recommendations[0].selection}</strong> no mercado ${recommendations[0].market}`,
+                `O mercado <strong>Ambas A Marcar</strong> mostra valor consistente com <strong>+${recommendations[1].edge}%</strong> de vantagem`,
+                `O <strong>Total de Golos</strong> favorece o <strong>${recommendations[2].selection}</strong> com confiança de ${recommendations[2].confidence}%`,
+                `A primeira equipa a marcar tem maior probabilidade de ser <strong>${recommendations[3].selection}</strong>`
+            ];
+            
+            insights.forEach(insight => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start';
+                li.innerHTML = `
+                    <i class="fas fa-check-circle text-green-400 mt-1 mr-2"></i>
+                    <span>${insight}</span>
+                `;
+                insightsList.appendChild(li);
+            });
+        }
+        
+        // Populate markets list with analysis
+        function populateMarkets() {
+            marketsList.innerHTML = '';
+            
+            markets.forEach(market => {
+                const marketEl = document.createElement('div');
+                marketEl.className = 'market-analysis analyzing';
+                marketEl.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-bold text-lg flex items-center">
+                                <i class="fas ${market.icon} mr-2 text-blue-400"></i>
+                                ${market.name}
+                            </h3>
+                            <p class="text-gray-400 text-sm">${market.description}</p>
+                            <div class="mt-2 text-sm">
+                                <span class="loading-dots">Analisando</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-yellow-400">--%</div>
+                            <div class="text-sm text-gray-400">Confiança</div>
+                        </div>
+                    </div>
+                `;
+                marketsList.appendChild(marketEl);
+                
+                // Simulate analysis completion after a delay
+                setTimeout(() => {
+                    const confidence = Math.floor(Math.random() * 40) + 50; // 50-90%
+                    const edge = Math.floor(Math.random() * 15) + 1; // 1-15%
+                    
+                    marketEl.classList.remove('analyzing');
+                    marketEl.classList.add('completed');
+                    
+                    // Determine team recommendation
+                    let teamRec = '';
+                    let teamClass = '';
+                    const rand = Math.random();
+                    if (rand < 0.4) {
+                        teamRec = homeTeamInput.value || 'Casa';
+                        teamClass = 'recommend-home';
+                    } else if (rand < 0.7) {
+                        teamRec = awayTeamInput.value || 'Fora';
+                        teamClass = 'recommend-away';
+                    } else {
+                        teamRec = 'Empate';
+                        teamClass = 'recommend-draw';
+                    }
+                    
+                    marketEl.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center mb-2">
+                                    <h3 class="font-bold text-lg">${market.name}</h3>
+                                    <span class="team-recommendation ${teamClass}">${teamRec}</span>
+                                </div>
+                                <p class="text-gray-400 text-sm">${market.description}</p>
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                    <span class="bg-blue-500/20 text-blue-300 px-2 py-1 rounded text-xs">Modelo: ${65 - Math.floor(Math.random() * 20)}%</span>
+                                    <span class="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-xs">Mercado: ${55 - Math.floor(Math.random() * 20)}%</span>
+                                    <span class="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs">Edge: +${edge}%</span>
+                                </div>
+                            </div>
+                            <div class="text-right ml-4">
+                                <div class="text-2xl font-bold ${confidence >= 70 ? 'text-green-400' : confidence >= 50 ? 'text-yellow-400' : 'text-red-400'}">${confidence}%</div>
+                                <div class="text-sm ${confidence >= 70 ? 'text-green-400' : confidence >= 50 ? 'text-yellow-400' : 'text-red-400'} font-semibold">
+                                    ${confidence >= 70 ? 'ALTA' : confidence >= 50 ? 'MÉDIA' : 'BAIXA'}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="progress-bar mt-3">
+                            <div class="progress-fill ${confidence >= 70 ? 'confidence-high' : confidence >= 50 ? 'confidence-medium' : 'confidence-low'}" style="width: ${confidence}%"></div>
+                        </div>
+                    `;
+                }, 1000 + Math.random() * 2000);
+            });
+        }
+        
+        // Initialize charts
+        function initializeCharts() {
+            // Probability Distribution Chart
+            const probCtx = document.getElementById('probabilityChart').getContext('2d');
+            new Chart(probCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Casa', 'Empate', 'Fora'],
+                    datasets: [{
+                        data: [45, 30, 25],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(156, 163, 175, 0.8)',
+                            'rgba(239, 68, 68, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgb(59, 130, 246)',
+                            'rgb(156, 163, 175)',
+                            'rgb(239, 68, 68)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: 'white',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Value Comparison Chart
+            const valueCtx = document.getElementById('valueChart').getContext('2d');
+            new Chart(valueCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Casa', 'Empate', 'Fora', 'GG', 'Over 2.5'],
+                    datasets: [
+                        {
+                            label: 'Probabilidade do Modelo',
+                            data: [45, 30, 25, 65, 55],
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderColor: 'rgb(16, 185, 129)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Probabilidade Implícita',
+                            data: [45, 28, 27, 54, 48],
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                            borderColor: 'rgb(59, 130, 246)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                color: 'white'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: 'white'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'white'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Calculate predictions based on input
+        function calculatePredictions() {
+            // In a real app, this would make complex calculations
+            // For this demo, we'll just update the UI with a loading state
+            
+            calculateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Calculando...';
+            calculateBtn.classList.remove('pulse');
+            calculateBtn.disabled = true;
+            
+            // Show loading state in suggestions
+            suggestionsList.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-3xl text-blue-400 mb-4"></i>
+                    <p class="text-gray-400">Calculando previsões com base nos dados inseridos...</p>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                // Simulate calculation time
+                calculateBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Cálculo Concluído';
+                calculateBtn.classList.add('pulse');
+                
+                // Update recommendations with new data
+                updateRecommendations();
+                
+                // Initialize charts if not already done
+                if (!window.chartsInitialized) {
+                    initializeCharts();
+                    window.chartsInitialized = true;
+                }
+                
+                // Reset button after a delay
+                setTimeout(() => {
+                    calculateBtn.innerHTML = '<i class="fas fa-calculator mr-2"></i> Calcular Previsões';
+                    calculateBtn.disabled = false;
+                }, 2000);
+            }, 2000);
+        }
+        
+        // Refresh data from Betway
+        function refreshData() {
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Atualizando...';
+            refreshBtn.disabled = true;
+            
+            // Simulate API call to Betway
+            setTimeout(() => {
+                // Update odds with slight random variations
+                homeOddsInput.value = (2.0 + Math.random() * 0.5).toFixed(2);
+                drawOddsInput.value = (3.0 + Math.random() * 1.0).toFixed(2);
+                awayOddsInput.value = (2.8 + Math.random() * 0.8).toFixed(2);
+                
+                refreshBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Dados Atualizados';
+                
+                // Reset button after a delay
+                setTimeout(() => {
+                    refreshBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Atualizar Dados';
+                    refreshBtn.disabled = false;
+                }, 2000);
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
