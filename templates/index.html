@@ -3,1133 +3,677 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Preditor Futebol - Calculadora de Apostas</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Preditor Universal de Futebol Infinito 2025</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#1e40af', 
+                        accent: '#f59e0b',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        :root {
-            --primary: #3b82f6;
-            --secondary: #10b981;
-            --accent: #f59e0b;
-            --dark: #1e293b;
-            --light: #f8fafc;
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #6366f1 100%);
         }
-        
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            min-height: 100vh;
-            color: var(--light);
-        }
-        
-        .card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-        
         .market-card {
             transition: all 0.3s ease;
-            cursor: pointer;
+            border-left: 4px solid;
         }
-        
         .market-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
-        
-        .market-card.selected {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 2px var(--accent);
-        }
-        
-        .progress-bar {
-            height: 8px;
-            border-radius: 4px;
+        .confidence-bar {
+            height: 6px;
+            border-radius: 3px;
+            background: #e5e7eb;
             overflow: hidden;
-            background: rgba(255, 255, 255, 0.1);
         }
-        
-        .progress-fill {
+        .confidence-fill {
             height: 100%;
-            border-radius: 4px;
-            transition: width 0.5s ease;
+            border-radius: 3px;
+            transition: width 0.8s ease;
         }
+        .priority-high { border-left-color: #10b981; }
+        .priority-medium { border-left-color: #f59e0b; }
+        .priority-low { border-left-color: #6b7280; }
         
-        .confidence-high {
-            background: linear-gradient(90deg, #10b981, #34d399);
-        }
+        .stake-high { background: #10b981; color: white; }
+        .stake-medium { background: #f59e0b; color: white; }
+        .stake-normal { background: #3b82f6; color: white; }
+        .stake-low { background: #6b7280; color: white; }
         
-        .confidence-medium {
-            background: linear-gradient(90deg, #f59e0b, #fbbf24);
-        }
-        
-        .confidence-low {
-            background: linear-gradient(90deg, #ef4444, #f87171);
-        }
-        
-        .bet-suggestion {
-            padding: 12px 16px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            transition: all 0.3s ease;
-        }
-        
-        .bet-suggestion:hover {
-            transform: scale(1.02);
-        }
-        
-        .bet-high {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(52, 211, 153, 0.1));
-            border-left: 4px solid #10b981;
-        }
-        
-        .bet-medium {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.1));
-            border-left: 4px solid #f59e0b;
-        }
-        
-        .bet-low {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(248, 113, 113, 0.1));
-            border-left: 4px solid #ef4444;
-        }
-        
-        .glow {
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
-        }
-        
-        input, select {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-        }
-        
-        .tab {
-            padding: 10px 20px;
-            border-radius: 8px 8px 0 0;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .tab.active {
-            background: rgba(59, 130, 246, 0.2);
-            border-bottom: 2px solid var(--primary);
-        }
-        
-        .logo {
-            font-weight: 700;
-            background: linear-gradient(90deg, #3b82f6, #10b981);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .betway-badge {
-            background: linear-gradient(90deg, #00b4ff, #00ff9d);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        .pulse {
+        .pulse-online {
             animation: pulse 2s infinite;
         }
         
-        .market-analysis {
-            border-left: 4px solid;
-            padding-left: 12px;
-            margin-bottom: 16px;
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
         }
         
-        .market-analysis.analyzing {
-            border-left-color: #f59e0b;
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
         }
         
-        .market-analysis.completed {
-            border-left-color: #10b981;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
-        .market-analysis.error {
-            border-left-color: #ef4444;
-        }
-        
-        .loading-dots:after {
-            content: '';
-            animation: dots 1.5s steps(5, end) infinite;
-        }
-        
-        @keyframes dots {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60%, 100% { content: '...'; }
-        }
-        
-        .clear-btn {
-            background: linear-gradient(135deg, #ef4444, #f87171);
-            transition: all 0.3s ease;
-        }
-        
-        .clear-btn:hover {
-            background: linear-gradient(135deg, #dc2626, #ef4444);
-            transform: translateY(-2px);
-        }
-        
-        .team-recommendation {
-            display: inline-flex;
-            align-items: center;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            margin-left: 8px;
-        }
-        
-        .recommend-home {
-            background: rgba(59, 130, 246, 0.3);
-            color: #60a5fa;
-            border: 1px solid #3b82f6;
-        }
-        
-        .recommend-away {
-            background: rgba(239, 68, 68, 0.3);
-            color: #f87171;
-            border: 1px solid #ef4444;
-        }
-        
-        .recommend-draw {
-            background: rgba(156, 163, 175, 0.3);
-            color: #d1d5db;
-            border: 1px solid #9ca3af;
-        }
-        
-        .action-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-        }
-        
-        .action-high {
-            background: linear-gradient(135deg, #10b981, #34d399);
-            color: white;
-        }
-        
-        .action-medium {
-            background: linear-gradient(135deg, #f59e0b, #fbbf24);
-            color: white;
-        }
-        
-        .action-low {
-            background: linear-gradient(135deg, #ef4444, #f87171);
-            color: white;
+        .ad-space {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border: 2px dashed #cbd5e1;
         }
     </style>
 </head>
-<body class="min-h-screen py-8 px-4">
-    <div class="max-w-6xl mx-auto">
-        <!-- Header -->
-        <header class="flex flex-col md:flex-row justify-between items-center mb-8">
-            <div class="flex items-center mb-4 md:mb-0">
-                <i class="fas fa-futbol text-3xl mr-3 text-blue-400"></i>
-                <h1 class="text-3xl font-bold logo">PreditorFutebol</h1>
-            </div>
-            <div class="flex items-center space-x-4">
-                <div class="betway-badge flex items-center">
-                    <i class="fas fa-bolt mr-2"></i>
-                    <span>Betway Integrado</span>
-                </div>
-                <button id="refreshBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition flex items-center">
-                    <i class="fas fa-sync-alt mr-2"></i>
-                    Atualizar Dados
-                </button>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Input Section -->
-            <div class="lg:col-span-1">
-                <div class="card p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold flex items-center">
-                            <i class="fas fa-sliders-h mr-2 text-blue-400"></i>
-                            Configuração da Partida
-                        </h2>
-                        <button id="clearBtn" class="clear-btn text-white px-4 py-2 rounded-lg transition flex items-center">
-                            <i class="fas fa-eraser mr-2"></i>
-                            Limpar Tudo
-                        </button>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-2xl">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-white/20 rounded-xl">
+                        <i class="fas fa-infinity text-2xl text-accent"></i>
                     </div>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Time da Casa</label>
-                            <input type="text" id="homeTeam" class="w-full p-3 rounded-lg" placeholder="Ex: Benfica" value="Benfica">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Time Visitante</label>
-                            <input type="text" id="awayTeam" class="w-full p-3 rounded-lg" placeholder="Ex: Porto" value="Porto">
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Prob. Casa (%)</label>
-                                <input type="number" id="homeProb" class="w-full p-3 rounded-lg" min="0" max="100" value="45">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Odds Casa</label>
-                                <input type="number" id="homeOdds" class="w-full p-3 rounded-lg" step="0.01" value="2.20">
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Prob. Empate (%)</label>
-                                <input type="number" id="drawProb" class="w-full p-3 rounded-lg" min="0" max="100" value="30">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Odds Empate</label>
-                                <input type="number" id="drawOdds" class="w-full p-3 rounded-lg" step="0.01" value="3.50">
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Prob. Fora (%)</label>
-                                <input type="number" id="awayProb" class="w-full p-3 rounded-lg" min="0" max="100" value="25">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Odds Fora</label>
-                                <input type="number" id="awayOdds" class="w-full p-3 rounded-lg" step="0.01" value="3.10">
-                            </div>
-                        </div>
-                        
-                        <div class="pt-4 border-t border-gray-700">
-                            <h3 class="text-lg font-semibold mb-3">Probabilidades Adicionais</h3>
-                            
-                            <div class="space-y-3">
-                                <div>
-                                    <label class="block text-sm font-medium mb-1">Ambas Marcam (%)</label>
-                                    <input type="number" id="bothScoreProb" class="w-full p-3 rounded-lg" min="0" max="100" value="65">
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium mb-1">Over 2.5 Golos (%)</label>
-                                    <input type="number" id="over25Prob" class="w-full p-3 rounded-lg" min="0" max="100" value="55">
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium mb-1">1ª Equipa a Marcar - Casa (%)</label>
-                                    <input type="number" id="firstGoalProb" class="w-full p-3 rounded-lg" min="0" max="100" value="48">
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium mb-1">Total Cartões > 4.5 (%)</label>
-                                    <input type="number" id="cardsProb" class="w-full p-3 rounded-lg" min="0" max="100" value="40">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4 mt-6">
-                            <button id="calculateBtn" class="w-full bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-white font-bold py-3 rounded-lg transition flex items-center justify-center pulse">
-                                <i class="fas fa-calculator mr-2"></i>
-                                Calcular
-                            </button>
-                            <button id="quickFillBtn" class="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-bold py-3 rounded-lg transition flex items-center justify-center">
-                                <i class="fas fa-magic mr-2"></i>
-                                Preencher Auto
-                            </button>
-                        </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">Preditor Universal de Futebol Infinito</h1>
+                        <p class="text-blue-100 text-sm">Sistema Inteligente de Previsões 2025</p>
                     </div>
                 </div>
-                
-                <!-- Statistics Card -->
-                <div class="card p-6 mt-6">
-                    <h2 class="text-xl font-bold mb-4 flex items-center">
-                        <i class="fas fa-chart-bar mr-2 text-green-400"></i>
-                        Estatísticas do Modelo
-                    </h2>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <div class="flex justify-between mb-1">
-                                <span>Precisão do Modelo</span>
-                                <span>72%</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill confidence-high" style="width: 72%"></div>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <div class="flex justify-between mb-1">
-                                <span>ROI nos Últimos 30 Dias</span>
-                                <span>+8.5%</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill confidence-medium" style="width: 65%"></div>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <div class="flex justify-between mb-1">
-                                <span>Taxa de Acerto GG/NG</span>
-                                <span>68%</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill confidence-high" style="width: 68%"></div>
-                            </div>
-                        </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 bg-blue-800/50 px-4 py-2 rounded-full">
+                        <span class="w-3 h-3 bg-green-400 rounded-full pulse-online"></span>
+                        <span class="font-medium" id="online-count">2.847</span>
+                        <span class="text-blue-200">online</span>
                     </div>
-                </div>
-            </div>
-            
-            <!-- Results Section -->
-            <div class="lg:col-span-2">
-                <div class="card p-6">
-                    <div class="flex border-b border-gray-700 mb-6 overflow-x-auto">
-                        <div class="tab active" data-tab="predictions">
-                            <i class="fas fa-bullseye mr-2"></i>
-                            Previsões Principais
-                        </div>
-                        <div class="tab" data-tab="markets">
-                            <i class="fas fa-store mr-2"></i>
-                            Todos os Mercados
-                        </div>
-                        <div class="tab" data-tab="analysis">
-                            <i class="fas fa-chart-line mr-2"></i>
-                            Análise Detalhada
-                        </div>
+                    <div class="text-sm bg-black/20 px-3 py-1 rounded-lg">
+                        <i class="fas fa-clock mr-2"></i>
+                        <span id="current-time">--:--:--</span>
                     </div>
-                    
-                    <!-- Predictions Tab -->
-                    <div id="predictions-tab" class="tab-content active">
-                        <h2 class="text-2xl font-bold mb-2">Sugestões de Aposta</h2>
-                        <p class="text-gray-400 mb-6">Recomendações objetivas baseadas na análise de valor</p>
-                        
-                        <div id="suggestionsList" class="space-y-4">
-                            <!-- Suggestions will be populated by JavaScript -->
-                        </div>
-                        
-                        <div class="mt-8">
-                            <h3 class="text-xl font-bold mb-4 flex items-center">
-                                <i class="fas fa-trophy mr-2 text-yellow-400"></i>
-                                Mercado Recomendado
-                            </h3>
-                            
-                            <div id="recommendedMarket" class="p-4 rounded-lg bg-gradient-to-r from-blue-900/30 to-green-900/30 border border-blue-500/30 glow">
-                                <!-- Recommended market will be populated by JavaScript -->
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Markets Tab -->
-                    <div id="markets-tab" class="tab-content hidden">
-                        <h2 class="text-2xl font-bold mb-4">Todos os Mercados Disponíveis</h2>
-                        
-                        <div id="marketsList" class="space-y-4">
-                            <!-- Market analysis will be populated by JavaScript -->
-                        </div>
-                    </div>
-                    
-                    <!-- Analysis Tab -->
-                    <div id="analysis-tab" class="tab-content hidden">
-                        <h2 class="text-2xl font-bold mb-4">Análise Detalhada da Partida</h2>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="card p-4">
-                                <h3 class="text-lg font-bold mb-3 flex items-center">
-                                    <i class="fas fa-chart-pie mr-2 text-blue-400"></i>
-                                    Distribuição de Probabilidades
-                                </h3>
-                                <div class="h-64 flex items-center justify-center">
-                                    <canvas id="probabilityChart"></canvas>
-                                </div>
-                            </div>
-                            
-                            <div class="card p-4">
-                                <h3 class="text-lg font-bold mb-3 flex items-center">
-                                    <i class="fas fa-balance-scale mr-2 text-green-400"></i>
-                                    Comparação de Valor
-                                </h3>
-                                <div class="h-64 flex items-center justify-center">
-                                    <canvas id="valueChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="card p-4 mt-6">
-                            <h3 class="text-lg font-bold mb-3 flex items-center">
-                                <i class="fas fa-lightbulb mr-2 text-yellow-400"></i>
-                                Insights do Modelo
-                            </h3>
-                            <ul id="insightsList" class="space-y-2">
-                                <!-- Insights will be populated by JavaScript -->
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Betway Integration -->
-                <div class="card p-6 mt-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold flex items-center">
-                            <i class="fas fa-bolt mr-2 text-green-400"></i>
-                            Integração Betway
-                        </h2>
-                        <span class="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center">
-                            <i class="fas fa-check mr-1"></i>
-                            Conectado
-                        </span>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="p-4 rounded-lg bg-gray-800 text-center">
-                            <div class="text-2xl font-bold text-green-400">1.85</div>
-                            <div class="text-sm text-gray-400">Ambas Marcam - Sim</div>
-                        </div>
-                        <div class="p-4 rounded-lg bg-gray-800 text-center">
-                            <div class="text-2xl font-bold">2.20</div>
-                            <div class="text-sm text-gray-400">Casa - Vitória</div>
-                        </div>
-                        <div class="p-4 rounded-lg bg-gray-800 text-center">
-                            <div class="text-2xl font-bold">1.95</div>
-                            <div class="text-sm text-gray-400">Over 2.5 Golos</div>
-                        </div>
-                    </div>
-                    
-                    <button class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-3 rounded-lg transition flex items-center justify-center mt-4">
-                        <i class="fas fa-external-link-alt mr-2"></i>
-                        Abrir Betway para Apostar
-                    </button>
                 </div>
             </div>
         </div>
-        
-        <!-- Footer -->
-        <footer class="mt-8 text-center text-gray-500 text-sm">
-            <p>PreditorFutebol &copy; 2023 - Ferramenta de análise para apostas desportivas. Aposte com responsabilidade.</p>
-        </footer>
-    </div>
+    </header>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        // DOM Elements
-        const calculateBtn = document.getElementById('calculateBtn');
-        const refreshBtn = document.getElementById('refreshBtn');
-        const clearBtn = document.getElementById('clearBtn');
-        const quickFillBtn = document.getElementById('quickFillBtn');
-        const tabs = document.querySelectorAll('.tab');
-        const tabContents = document.querySelectorAll('.tab-content');
-        const suggestionsList = document.getElementById('suggestionsList');
-        const marketsList = document.getElementById('marketsList');
-        const recommendedMarket = document.getElementById('recommendedMarket');
-        const insightsList = document.getElementById('insightsList');
-        
-        // Input elements
-        const homeTeamInput = document.getElementById('homeTeam');
-        const awayTeamInput = document.getElementById('awayTeam');
-        const homeProbInput = document.getElementById('homeProb');
-        const drawProbInput = document.getElementById('drawProb');
-        const awayProbInput = document.getElementById('awayProb');
-        const homeOddsInput = document.getElementById('homeOdds');
-        const drawOddsInput = document.getElementById('drawOdds');
-        const awayOddsInput = document.getElementById('awayOdds');
-        const bothScoreInput = document.getElementById('bothScoreProb');
-        const over25Input = document.getElementById('over25Prob');
-        const firstGoalInput = document.getElementById('firstGoalProb');
-        const cardsInput = document.getElementById('cardsProb');
-
-        // Market data
-        const markets = [
-            { id: '1x2', name: '1X2', icon: 'fa-trophy', description: 'Resultado final da partida' },
-            { id: 'chance-dupla', name: 'Chance Dupla', icon: 'fa-shield-alt', description: 'Duas opções de resultado' },
-            { id: 'gg-ng', name: 'Ambas A Marcar (GG/NG)', icon: 'fa-futbol', description: 'Ambas as equipas marcam' },
-            { id: 'total-golos', name: 'Total De Golos', icon: 'fa-chart-line', description: 'Over/Under de golos' },
-            { id: 'booking', name: 'Booking 1X2', icon: 'fa-clipboard-list', description: 'Cartões na partida' },
-            { id: 'empate-anula', name: 'Empate Anula Aposta', icon: 'fa-ban', description: 'Empate anula a aposta' },
-            { id: 'primeira-marcar', name: 'Primeira Equipa A Marcar', icon: 'fa-flag', description: 'Primeiro golo da partida' },
-            { id: 'impar-par', name: 'Total De Golos Ímpar/Par', icon: 'fa-divide', description: 'Número ímpar/par de golos' },
-            { id: 'primeira-parte', name: '1ª Parte - 1X2', icon: 'fa-clock', description: 'Resultado ao intervalo' },
-            { id: 'handicap', name: 'Handicap', icon: 'fa-balance-scale', description: 'Handicap asiático/europeu' },
-            { id: 'vencedor-total', name: 'Vencedor e total de golos', icon: 'fa-crown', description: 'Resultado e total combinados' },
-            { id: 'total-cartoes', name: 'Total de cartões', icon: 'fa-clipboard', description: 'Over/Under de cartões' },
-            { id: 'resto-partida', name: 'Qual equipe vencerá o resto da partida', icon: 'fa-forward', description: 'Resultado após momento atual' }
-        ];
-        
-        // Initialize the app
-        document.addEventListener('DOMContentLoaded', function() {
-            // Set up tab switching
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    const tabId = tab.getAttribute('data-tab');
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+            <!-- Left Column - Input Section -->
+            <div class="xl:col-span-1">
+                <div class="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
+                    <h2 class="text-xl font-bold mb-6 flex items-center text-gray-800">
+                        <i class="fas fa-calculator mr-3 text-primary text-2xl"></i>
+                        Dados do Confronto
+                    </h2>
                     
-                    // Update active tab
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    
-                    // Show active content
-                    tabContents.forEach(content => {
-                        content.classList.add('hidden');
-                        content.classList.remove('active');
-                    });
-                    
-                    document.getElementById(`${tabId}-tab`).classList.remove('hidden');
-                    document.getElementById(`${tabId}-tab`).classList.add('active');
-                    
-                    // If markets tab is selected, populate markets
-                    if (tabId === 'markets') {
-                        populateMarkets();
-                    }
-                });
-            });
-            
-            // Set up calculate button
-            calculateBtn.addEventListener('click', calculatePredictions);
-            
-            // Set up refresh button
-            refreshBtn.addEventListener('click', refreshData);
-            
-            // Set up clear button
-            clearBtn.addEventListener('click', clearAllData);
-            
-            // Set up quick fill button
-            quickFillBtn.addEventListener('click', quickFillData);
-            
-            // Initialize with sample data
-            updateRecommendations();
-        });
-        
-        // Clear all input data
-        function clearAllData() {
-            if (confirm('Tem certeza que deseja limpar todos os dados?')) {
-                homeTeamInput.value = '';
-                awayTeamInput.value = '';
-                homeProbInput.value = '';
-                drawProbInput.value = '';
-                awayProbInput.value = '';
-                homeOddsInput.value = '';
-                drawOddsInput.value = '';
-                awayOddsInput.value = '';
-                bothScoreInput.value = '';
-                over25Input.value = '';
-                firstGoalInput.value = '';
-                cardsInput.value = '';
-                
-                // Clear recommendations
-                suggestionsList.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fas fa-info-circle mr-2"></i>Insira os dados da partida para ver recomendações</div>';
-                recommendedMarket.innerHTML = '<div class="text-center py-4 text-gray-400">Nenhuma recomendação disponível</div>';
-                
-                // Show success message
-                showNotification('Dados limpos com sucesso!', 'success');
-            }
-        }
-        
-        // Quick fill with sample data
-        function quickFillData() {
-            homeTeamInput.value = 'Benfica';
-            awayTeamInput.value = 'Porto';
-            homeProbInput.value = '48';
-            drawProbInput.value = '28';
-            awayProbInput.value = '24';
-            homeOddsInput.value = '2.15';
-            drawOddsInput.value = '3.40';
-            awayOddsInput.value = '3.25';
-            bothScoreInput.value = '62';
-            over25Input.value = '58';
-            firstGoalInput.value = '52';
-            cardsInput.value = '45';
-            
-            showNotification('Dados preenchidos automaticamente!', 'success');
-        }
-        
-        // Show notification
-        function showNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-                type === 'success' ? 'bg-green-500' : 'bg-red-500'
-            } text-white font-semibold`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
-        
-        // Update recommendations based on input data
-        function updateRecommendations() {
-            const homeTeam = homeTeamInput.value || 'Casa';
-            const awayTeam = awayTeamInput.value || 'Fora';
-            const homeProb = parseFloat(homeProbInput.value) || 0;
-            const awayProb = parseFloat(awayProbInput.value) || 0;
-            const drawProb = parseFloat(drawProbInput.value) || 0;
-            
-            // Determine best 1X2 recommendation
-            let best1X2 = '';
-            let best1X2Prob = 0;
-            
-            if (homeProb > awayProb && homeProb > drawProb) {
-                best1X2 = homeTeam;
-                best1X2Prob = homeProb;
-            } else if (awayProb > homeProb && awayProb > drawProb) {
-                best1X2 = awayTeam;
-                best1X2Prob = awayProb;
-            } else {
-                best1X2 = 'Empate';
-                best1X2Prob = drawProb;
-            }
-            
-            // Generate recommendations based on probabilities
-            const recommendations = [
-                {
-                    market: '1X2',
-                    selection: best1X2,
-                    confidence: Math.min(95, Math.max(30, best1X2Prob + 20)),
-                    modelProb: best1X2Prob,
-                    impliedProb: Math.max(20, best1X2Prob - 5),
-                    edge: 5 + Math.random() * 10,
-                    odds: best1X2 === homeTeam ? (2.0 + Math.random() * 0.5).toFixed(2) : 
-                          best1X2 === awayTeam ? (2.8 + Math.random() * 0.7).toFixed(2) : 
-                          (3.2 + Math.random() * 0.8).toFixed(2),
-                    type: best1X2Prob > 45 ? 'high' : best1X2Prob > 35 ? 'medium' : 'low',
-                    teamRecommendation: best1X2 === homeTeam ? 'home' : best1X2 === awayTeam ? 'away' : 'draw'
-                },
-                {
-                    market: 'Ambas A Marcar (GG/NG)',
-                    selection: 'SIM',
-                    confidence: 78,
-                    modelProb: 65,
-                    impliedProb: 54,
-                    edge: 11,
-                    odds: 1.85,
-                    type: 'high',
-                    teamRecommendation: 'both'
-                },
-                {
-                    market: 'Total De Golos',
-                    selection: 'Over 2.5',
-                    confidence: 72,
-                    modelProb: 58,
-                    impliedProb: 48,
-                    edge: 10,
-                    odds: 2.08,
-                    type: 'high',
-                    teamRecommendation: 'over'
-                },
-                {
-                    market: 'Primeira Equipa A Marcar',
-                    selection: homeTeam,
-                    confidence: 68,
-                    modelProb: 52,
-                    impliedProb: 42,
-                    edge: 10,
-                    odds: 2.38,
-                    type: 'medium',
-                    teamRecommendation: 'home'
-                },
-                {
-                    market: 'Handicap -1',
-                    selection: homeTeam,
-                    confidence: 45,
-                    modelProb: 40,
-                    impliedProb: 38,
-                    edge: 2,
-                    odds: 2.10,
-                    type: 'low',
-                    teamRecommendation: 'home'
-                }
-            ];
-            
-            // Update suggestions list
-            updateSuggestionsList(recommendations);
-            
-            // Update recommended market
-            updateRecommendedMarket(recommendations[0], homeTeam, awayTeam);
-            
-            // Update insights
-            updateInsights(recommendations, homeTeam, awayTeam);
-        }
-        
-        // Update suggestions list
-        function updateSuggestionsList(recommendations) {
-            suggestionsList.innerHTML = '';
-            
-            recommendations.forEach(suggestion => {
-                const suggestionEl = document.createElement('div');
-                suggestionEl.className = `bet-suggestion bet-${suggestion.type}`;
-                
-                let actionText = '';
-                let actionClass = '';
-                
-                if (suggestion.confidence >= 70) {
-                    actionText = 'APOSTAR FORTE';
-                    actionClass = 'action-high';
-                } else if (suggestion.confidence >= 50) {
-                    actionText = 'CONSIDERAR APOSTA';
-                    actionClass = 'action-medium';
-                } else {
-                    actionText = 'EVITAR';
-                    actionClass = 'action-low';
-                }
-                
-                // Team recommendation badge
-                let teamBadge = '';
-                if (suggestion.teamRecommendation === 'home') {
-                    teamBadge = `<span class="team-recommendation recommend-home">${homeTeamInput.value || 'Casa'}</span>`;
-                } else if (suggestion.teamRecommendation === 'away') {
-                    teamBadge = `<span class="team-recommendation recommend-away">${awayTeamInput.value || 'Fora'}</span>`;
-                } else if (suggestion.teamRecommendation === 'draw') {
-                    teamBadge = `<span class="team-recommendation recommend-draw">Empate</span>`;
-                } else if (suggestion.teamRecommendation === 'both') {
-                    teamBadge = `<span class="team-recommendation recommend-home">Ambas</span>`;
-                } else if (suggestion.teamRecommendation === 'over') {
-                    teamBadge = `<span class="team-recommendation recommend-home">Over</span>`;
-                }
-                
-                suggestionEl.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <div class="flex items-center mb-2">
-                                <h3 class="font-bold text-lg">${suggestion.market}</h3>
-                                ${teamBadge}
+                    <div class="space-y-6">
+                        <!-- Team Inputs -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    <i class="fas fa-home mr-2 text-primary"></i>
+                                    Equipa Casa
+                                </label>
+                                <input type="text" id="team-a" 
+                                    class="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition"
+                                    placeholder="Ex: Benfica" value="Benfica">
                             </div>
-                            <p class="text-gray-300 mb-2">${suggestion.selection}</p>
-                            <div class="flex flex-wrap gap-2">
-                                <span class="bg-blue-500/20 text-blue-300 px-2 py-1 rounded text-xs">Modelo: ${suggestion.modelProb}%</span>
-                                <span class="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-xs">Mercado: ${suggestion.impliedProb}%</span>
-                                <span class="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs">Edge: +${suggestion.edge}%</span>
-                                <span class="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded text-xs">Odds: ${suggestion.odds}</span>
+                            
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    <i class="fas fa-plane mr-2 text-secondary"></i>
+                                    Equipa Fora
+                                </label>
+                                <input type="text" id="team-b" 
+                                    class="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-secondary transition"
+                                    placeholder="Ex: Porto" value="Porto">
                             </div>
                         </div>
-                        <div class="text-right ml-4">
-                            <div class="text-2xl font-bold ${suggestion.confidence >= 70 ? 'text-green-400' : suggestion.confidence >= 50 ? 'text-yellow-400' : 'text-red-400'}">${suggestion.confidence}%</div>
-                            <div class="action-badge ${actionClass} mt-1">${actionText}</div>
+                        
+                        <!-- Probability Inputs -->
+                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-xl border border-blue-100">
+                            <h3 class="text-lg font-bold mb-4 text-gray-800 flex items-center">
+                                <i class="fas fa-chart-pie mr-2 text-accent"></i>
+                                Probabilidades 1X2 (%)
+                            </h3>
+                            
+                            <div class="grid grid-cols-3 gap-3 mb-3">
+                                <div class="text-center">
+                                    <label class="block text-xs font-semibold text-gray-600 mb-2" id="team-a-label">CASA</label>
+                                    <input type="number" id="prob-a" min="0" max="100" 
+                                        class="w-full p-3 border-2 border-blue-200 rounded-lg text-center text-lg font-bold text-blue-700 focus:ring-2 focus:ring-blue-500"
+                                        value="48">
+                                </div>
+                                <div class="text-center">
+                                    <label class="block text-xs font-semibold text-gray-600 mb-2">EMPATE</label>
+                                    <input type="number" id="prob-draw" min="0" max="100" 
+                                        class="w-full p-3 border-2 border-yellow-200 rounded-lg text-center text-lg font-bold text-yellow-700 focus:ring-2 focus:ring-yellow-500"
+                                        value="28">
+                                </div>
+                                <div class="text-center">
+                                    <label class="block text-xs font-semibold text-gray-600 mb-2" id="team-b-label">FORA</label>
+                                    <input type="number" id="prob-b" min="0" max="100" 
+                                        class="w-full p-3 border-2 border-red-200 rounded-lg text-center text-lg font-bold text-red-700 focus:ring-2 focus:ring-red-500"
+                                        value="24">
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center px-2">
+                                <span class="text-sm text-gray-600">Total:</span>
+                                <span id="prob-sum" class="text-lg font-bold text-gray-800">100%</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="progress-bar mt-3">
-                        <div class="progress-fill confidence-${suggestion.type}" style="width: ${suggestion.confidence}%"></div>
-                    </div>
-                `;
-                
-                suggestionsList.appendChild(suggestionEl);
-            });
-        }
-        
-        // Update recommended market
-        function updateRecommendedMarket(topSuggestion, homeTeam, awayTeam) {
-            let teamBadge = '';
-            if (topSuggestion.teamRecommendation === 'home') {
-                teamBadge = `<span class="team-recommendation recommend-home">${homeTeam}</span>`;
-            } else if (topSuggestion.teamRecommendation === 'away') {
-                teamBadge = `<span class="team-recommendation recommend-away">${awayTeam}</span>`;
-            } else if (topSuggestion.teamRecommendation === 'draw') {
-                teamBadge = `<span class="team-recommendation recommend-draw">Empate</span>`;
-            } else if (topSuggestion.teamRecommendation === 'both') {
-                teamBadge = `<span class="team-recommendation recommend-home">Ambas</span>`;
-            } else if (topSuggestion.teamRecommendation === 'over') {
-                teamBadge = `<span class="team-recommendation recommend-home">Over</span>`;
-            }
-            
-            recommendedMarket.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <div>
-                        <div class="flex items-center mb-2">
-                            <h4 class="text-lg font-bold">${topSuggestion.market}</h4>
-                            ${teamBadge}
+                        
+                        <!-- Action Buttons -->
+                        <div class="space-y-3">
+                            <button id="calculate-btn" 
+                                class="w-full bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-primary text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center">
+                                <i class="fas fa-bolt mr-3 text-xl"></i>
+                                CALCULAR PREVISÕES
+                            </button>
+                            
+                            <button id="clear-btn"
+                                class="w-full bg-gradient-to-r from-gray-500 to-gray-700 hover:from-gray-600 hover:to-gray-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center justify-center">
+                                <i class="fas fa-broom mr-2"></i>
+                                LIMPAR DADOS
+                            </button>
                         </div>
-                        <p class="text-gray-300">${topSuggestion.selection}</p>
-                        <p class="text-gray-400 text-sm mt-1">Probabilidade do modelo: ${topSuggestion.modelProb}% | Probabilidade implícita: ${topSuggestion.impliedProb}%</p>
-                        <div class="flex items-center mt-2">
-                            <span class="bg-green-500 text-white px-2 py-1 rounded text-sm font-bold mr-2">EDGE: +${topSuggestion.edge}%</span>
-                            <span class="bg-blue-500 text-white px-2 py-1 rounded text-sm font-bold">ODDS: ${topSuggestion.odds}</span>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-3xl font-bold text-green-400">${topSuggestion.confidence}%</div>
-                        <div class="text-sm text-gray-300">Confiança</div>
-                        <div class="action-badge action-high mt-1">APOSTAR FORTE</div>
                     </div>
                 </div>
-            `;
-        }
-        
-        // Update insights
-        function updateInsights(recommendations, homeTeam, awayTeam) {
-            insightsList.innerHTML = '';
+                
+                <!-- Espaço para Anúncios -->
+                <div class="ad-space rounded-2xl p-6 mb-6 text-center">
+                    <div class="text-xs text-gray-500 mb-2">ESPAÇO PUBLICITÁRIO</div>
+                    <div class="h-32 flex items-center justify-center rounded-lg bg-gray-100">
+                        <span class="text-gray-400">Anúncio</span>
+                    </div>
+                </div>
+                
+                <!-- System Stats -->
+                <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                    <h3 class="text-lg font-bold mb-4 text-gray-800 flex items-center">
+                        <i class="fas fa-chart-line mr-2 text-success"></i>
+                        Estatísticas do Sistema
+                    </h3>
+                    
+                    <div class="space-y-3" id="system-stats">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="text-center p-3 bg-green-50 rounded-lg">
+                                <div class="text-2xl font-bold text-green-600">2.847</div>
+                                <div class="text-xs text-green-700">Utilizadores Online</div>
+                            </div>
+                            <div class="text-center p-3 bg-blue-50 rounded-lg">
+                                <div class="text-2xl font-bold text-blue-600">1.542</div>
+                                <div class="text-xs text-blue-700">Previsões Hoje</div>
+                            </div>
+                            <div class="text-center p-3 bg-purple-50 rounded-lg">
+                                <div class="text-2xl font-bold text-purple-600">82%</div>
+                                <div class="text-xs text-purple-700">Taxa de Sucesso</div>
+                            </div>
+                            <div class="text-center p-3 bg-orange-50 rounded-lg">
+                                <div class="text-2xl font-bold text-orange-600">18</div>
+                                <div class="text-xs text-orange-700">Mercados</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
-            const insights = [
-                `O mercado <strong>${recommendations[0].market}</strong> apresenta o maior valor identificado, com vantagem de <strong>+${recommendations[0].edge}%</strong>`,
-                `Recomendação principal: <strong>${recommendations[0].selection}</strong> no mercado ${recommendations[0].market}`,
-                `O mercado <strong>Ambas A Marcar</strong> mostra valor consistente com <strong>+${recommendations[1].edge}%</strong> de vantagem`,
-                `O <strong>Total de Golos</strong> favorece o <strong>${recommendations[2].selection}</strong> com confiança de ${recommendations[2].confidence}%`,
-                `A primeira equipa a marcar tem maior probabilidade de ser <strong>${recommendations[3].selection}</strong>`
-            ];
-            
-            insights.forEach(insight => {
-                const li = document.createElement('li');
-                li.className = 'flex items-start';
-                li.innerHTML = `
-                    <i class="fas fa-check-circle text-green-400 mt-1 mr-2"></i>
-                    <span>${insight}</span>
-                `;
-                insightsList.appendChild(li);
-            });
-        }
-        
-        // Populate markets list with analysis
-        function populateMarkets() {
-            marketsList.innerHTML = '';
-            
-            markets.forEach(market => {
-                const marketEl = document.createElement('div');
-                marketEl.className = 'market-analysis analyzing';
-                marketEl.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h3 class="font-bold text-lg flex items-center">
-                                <i class="fas ${market.icon} mr-2 text-blue-400"></i>
-                                ${market.name}
-                            </h3>
-                            <p class="text-gray-400 text-sm">${market.description}</p>
-                            <div class="mt-2 text-sm">
-                                <span class="loading-dots">Analisando</span>
+            <!-- Right Column - Results -->
+            <div class="xl:col-span-3">
+                <!-- Best Pick Banner -->
+                <div id="best-pick-banner" class="hidden bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl p-6 mb-6 shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="p-3 bg-white/20 rounded-xl">
+                                <i class="fas fa-crown text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold">MELHOR APOSTA DO JOGO</h3>
+                                <p class="text-green-100" id="best-pick-text">Carregando...</p>
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="text-2xl font-bold text-yellow-400">--%</div>
-                            <div class="text-sm text-gray-400">Confiança</div>
+                            <div class="text-3xl font-bold" id="best-pick-confidence">--%</div>
+                            <div class="text-green-200 text-sm">Confiança</div>
                         </div>
                     </div>
-                `;
-                marketsList.appendChild(marketEl);
+                </div>
+
+                <!-- Intel Probabilities -->
+                <div id="intel-probabilities" class="hidden bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-100">
+                    <h3 class="text-lg font-bold mb-4 text-gray-800 flex items-center">
+                        <i class="fas fa-brain mr-2 text-primary"></i>
+                        Probabilidades Inteligentes
+                    </h3>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <div class="text-2xl font-bold text-blue-600" id="intel-home">--%</div>
+                            <div class="text-sm text-gray-600" id="intel-home-team">CASA</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-yellow-600" id="intel-draw">--%</div>
+                            <div class="text-sm text-gray-600">EMPATE</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-red-600" id="intel-away">--%</div>
+                            <div class="text-sm text-gray-600" id="intel-away-team">FORA</div>
+                        </div>
+                    </div>
+                </div>
                 
-                // Simulate analysis completion after a delay
-                setTimeout(() => {
-                    const confidence = Math.floor(Math.random() * 40) + 50; // 50-90%
-                    const edge = Math.floor(Math.random() * 15) + 1; // 1-15%
+                <!-- Top Recommendations -->
+                <div id="top-recommendations" class="hidden bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
+                    <h2 class="text-xl font-bold mb-6 flex items-center text-gray-800">
+                        <i class="fas fa-star mr-3 text-accent text-2xl"></i>
+                        Top 5 Recomendações
+                    </h2>
                     
-                    marketEl.classList.remove('analyzing');
-                    marketEl.classList.add('completed');
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="recommendations-container">
+                        <!-- Top recommendations will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- Game Analysis -->
+                <div id="game-analysis" class="hidden bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl p-6 mb-6 shadow-xl">
+                    <h3 class="text-lg font-bold mb-3 flex items-center">
+                        <i class="fas fa-brain mr-2"></i>
+                        Análise Inteligente do Jogo
+                    </h3>
+                    <p id="analysis-text" class="text-blue-100 leading-relaxed">
+                        A análise do jogo será gerada aqui após o cálculo...
+                    </p>
+                </div>
+
+                <!-- Espaço para Anúncios Horizontal -->
+                <div class="ad-space rounded-2xl p-4 mb-6 text-center hidden md:block">
+                    <div class="text-xs text-gray-500 mb-2">PUBLICIDADE</div>
+                    <div class="h-20 flex items-center justify-center rounded-lg bg-gray-100">
+                        <span class="text-gray-400">Banner Publicitário</span>
+                    </div>
+                </div>
+                
+                <!-- All Markets -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold flex items-center text-gray-800">
+                            <i class="fas fa-list-alt mr-3 text-primary text-2xl"></i>
+                            Todos os 18 Mercados Analisados
+                        </h2>
+                        <div class="text-sm text-gray-500" id="results-count">0/18 mercados</div>
+                    </div>
                     
-                    // Determine team recommendation
-                    let teamRec = '';
-                    let teamClass = '';
-                    const rand = Math.random();
-                    if (rand < 0.4) {
-                        teamRec = homeTeamInput.value || 'Casa';
-                        teamClass = 'recommend-home';
-                    } else if (rand < 0.7) {
-                        teamRec = awayTeamInput.value || 'Fora';
-                        teamClass = 'recommend-away';
-                    } else {
-                        teamRec = 'Empate';
-                        teamClass = 'recommend-draw';
-                    }
-                    
-                    marketEl.innerHTML = `
-                        <div class="flex justify-between items-start">
-                            <div class="flex-1">
-                                <div class="flex items-center mb-2">
-                                    <h3 class="font-bold text-lg">${market.name}</h3>
-                                    <span class="team-recommendation ${teamClass}">${teamRec}</span>
-                                </div>
-                                <p class="text-gray-400 text-sm">${market.description}</p>
-                                <div class="mt-2 flex flex-wrap gap-2">
-                                    <span class="bg-blue-500/20 text-blue-300 px-2 py-1 rounded text-xs">Modelo: ${65 - Math.floor(Math.random() * 20)}%</span>
-                                    <span class="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-xs">Mercado: ${55 - Math.floor(Math.random() * 20)}%</span>
-                                    <span class="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs">Edge: +${edge}%</span>
-                                </div>
-                            </div>
-                            <div class="text-right ml-4">
-                                <div class="text-2xl font-bold ${confidence >= 70 ? 'text-green-400' : confidence >= 50 ? 'text-yellow-400' : 'text-red-400'}">${confidence}%</div>
-                                <div class="text-sm ${confidence >= 70 ? 'text-green-400' : confidence >= 50 ? 'text-yellow-400' : 'text-red-400'} font-semibold">
-                                    ${confidence >= 70 ? 'ALTA' : confidence >= 50 ? 'MÉDIA' : 'BAIXA'}
-                                </div>
-                            </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="markets-container">
+                        <div class="col-span-2 text-center py-12 text-gray-400">
+                            <i class="fas fa-futbol text-6xl mb-4 opacity-50"></i>
+                            <p class="text-lg">Insira os dados do jogo e clique em CALCULAR</p>
+                            <p class="text-sm mt-2">O sistema irá analisar todos os 18 mercados disponíveis</p>
                         </div>
-                        <div class="progress-bar mt-3">
-                            <div class="progress-fill ${confidence >= 70 ? 'confidence-high' : confidence >= 50 ? 'confidence-medium' : 'confidence-low'}" style="width: ${confidence}%"></div>
-                        </div>
-                    `;
-                }, 1000 + Math.random() * 2000);
-            });
-        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8 mt-12">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-6 md:mb-0">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <i class="fas fa-infinity text-2xl text-accent"></i>
+                        <span class="text-xl font-bold">Preditor Universal Infinito</span>
+                    </div>
+                    <p class="text-gray-400 text-sm">Sistema avançado de previsões desportivas 2025</p>
+                </div>
+                <div class="text-center md:text-right">
+                    <p class="text-gray-400 text-sm">© 2025 Preditor Universal. Todos os direitos reservados.</p>
+                    <p class="text-gray-500 text-xs mt-1">Aposte com responsabilidade. Este sistema é para fins informativos.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Socket.io connection
+        const socket = io();
         
-        // Initialize charts
-        function initializeCharts() {
-            // Probability Distribution Chart
-            const probCtx = document.getElementById('probabilityChart').getContext('2d');
-            new Chart(probCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Casa', 'Empate', 'Fora'],
-                    datasets: [{
-                        data: [45, 30, 25],
-                        backgroundColor: [
-                            'rgba(59, 130, 246, 0.8)',
-                            'rgba(156, 163, 175, 0.8)',
-                            'rgba(239, 68, 68, 0.8)'
-                        ],
-                        borderColor: [
-                            'rgb(59, 130, 246)',
-                            'rgb(156, 163, 175)',
-                            'rgb(239, 68, 68)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: 'white',
-                                font: {
-                                    size: 12
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-            
-            // Value Comparison Chart
-            const valueCtx = document.getElementById('valueChart').getContext('2d');
-            new Chart(valueCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Casa', 'Empate', 'Fora', 'GG', 'Over 2.5'],
-                    datasets: [
-                        {
-                            label: 'Probabilidade do Modelo',
-                            data: [45, 30, 25, 65, 55],
-                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                            borderColor: 'rgb(16, 185, 129)',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Probabilidade Implícita',
-                            data: [45, 28, 27, 54, 48],
-                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                            borderColor: 'rgb(59, 130, 246)',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            ticks: {
-                                color: 'white'
-                            },
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                color: 'white'
-                            },
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: 'white'
-                            }
-                        }
-                    }
-                }
-            });
-        }
+        // DOM Elements
+        const elements = {
+            teamA: document.getElementById('team-a'),
+            teamB: document.getElementById('team-b'),
+            probA: document.getElementById('prob-a'),
+            probB: document.getElementById('prob-b'),
+            probDraw: document.getElementById('prob-draw'),
+            probSum: document.getElementById('prob-sum'),
+            calculateBtn: document.getElementById('calculate-btn'),
+            clearBtn: document.getElementById('clear-btn'),
+            marketsContainer: document.getElementById('markets-container'),
+            recommendationsContainer: document.getElementById('recommendations-container'),
+            analysisText: document.getElementById('analysis-text'),
+            systemStats: document.getElementById('system-stats'),
+            onlineCount: document.getElementById('online-count'),
+            currentTime: document.getElementById('current-time'),
+            bestPickBanner: document.getElementById('best-pick-banner'),
+            bestPickText: document.getElementById('best-pick-text'),
+            bestPickConfidence: document.getElementById('best-pick-confidence'),
+            topRecommendations: document.getElementById('top-recommendations'),
+            gameAnalysis: document.getElementById('game-analysis'),
+            resultsCount: document.getElementById('results-count'),
+            teamALabel: document.getElementById('team-a-label'),
+            teamBLabel: document.getElementById('team-b-label'),
+            intelProbabilities: document.getElementById('intel-probabilities'),
+            intelHome: document.getElementById('intel-home'),
+            intelDraw: document.getElementById('intel-draw'),
+            intelAway: document.getElementById('intel-away'),
+            intelHomeTeam: document.getElementById('intel-home-team'),
+            intelAwayTeam: document.getElementById('intel-away-team')
+        };
+
+        // Update team labels
+        elements.teamA.addEventListener('input', () => {
+            const value = elements.teamA.value || 'CASA';
+            elements.teamALabel.textContent = value;
+            elements.intelHomeTeam.textContent = value;
+        });
         
-        // Calculate predictions based on input
-        function calculatePredictions() {
-            // In a real app, this would make complex calculations
-            // For this demo, we'll just update the UI with a loading state
+        elements.teamB.addEventListener('input', () => {
+            const value = elements.teamB.value || 'FORA';
+            elements.teamBLabel.textContent = value;
+            elements.intelAwayTeam.textContent = value;
+        });
+
+        // Update probability sum
+        function updateProbSum() {
+            const sum = parseInt(elements.probA.value) + parseInt(elements.probB.value) + parseInt(elements.probDraw.value);
+            elements.probSum.textContent = `${sum}%`;
             
-            calculateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Calculando...';
-            calculateBtn.classList.remove('pulse');
-            calculateBtn.disabled = true;
+            if (sum !== 100) {
+                elements.probSum.classList.add('text-red-500');
+            } else {
+                elements.probSum.classList.remove('text-red-500');
+            }
+        }
+
+        [elements.probA, elements.probB, elements.probDraw].forEach(input => {
+            input.addEventListener('input', updateProbSum);
+        });
+
+        // Clear form
+        elements.clearBtn.addEventListener('click', () => {
+            elements.teamA.value = '';
+            elements.teamB.value = '';
+            elements.probA.value = '0';
+            elements.probB.value = '0';
+            elements.probDraw.value = '0';
+            updateProbSum();
             
-            // Show loading state in suggestions
-            suggestionsList.innerHTML = `
-                <div class="text-center py-8">
-                    <i class="fas fa-spinner fa-spin text-3xl text-blue-400 mb-4"></i>
-                    <p class="text-gray-400">Calculando previsões com base nos dados inseridos...</p>
+            // Hide results sections
+            elements.bestPickBanner.classList.add('hidden');
+            elements.topRecommendations.classList.add('hidden');
+            elements.gameAnalysis.classList.add('hidden');
+            elements.intelProbabilities.classList.add('hidden');
+            
+            // Reset markets container
+            elements.marketsContainer.innerHTML = `
+                <div class="col-span-2 text-center py-12 text-gray-400">
+                    <i class="fas fa-futbol text-6xl mb-4 opacity-50"></i>
+                    <p class="text-lg">Insira os dados do jogo e clique em CALCULAR</p>
+                    <p class="text-sm mt-2">O sistema irá analisar todos os 18 mercados disponíveis</p>
                 </div>
             `;
             
-            setTimeout(() => {
-                // Simulate calculation time
-                calculateBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Cálculo Concluído';
-                calculateBtn.classList.add('pulse');
-                
-                // Update recommendations with new data
-                updateRecommendations();
-                
-                // Initialize charts if not already done
-                if (!window.chartsInitialized) {
-                    initializeCharts();
-                    window.chartsInitialized = true;
-                }
-                
-                // Reset button after a delay
-                setTimeout(() => {
-                    calculateBtn.innerHTML = '<i class="fas fa-calculator mr-2"></i> Calcular Previsões';
-                    calculateBtn.disabled = false;
-                }, 2000);
-            }, 2000);
-        }
-        
-        // Refresh data from Betway
-        function refreshData() {
-            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Atualizando...';
-            refreshBtn.disabled = true;
+            elements.resultsCount.textContent = '0/18 mercados';
+        });
+
+        // Calculate predictions
+        elements.calculateBtn.addEventListener('click', async () => {
+            const teamA = elements.teamA.value.trim() || 'Equipa Casa';
+            const teamB = elements.teamB.value.trim() || 'Equipa Fora';
+            const probA = parseInt(elements.probA.value) || 0;
+            const probB = parseInt(elements.probB.value) || 0;
+            const probDraw = parseInt(elements.probDraw.value) || 0;
             
-            // Simulate API call to Betway
-            setTimeout(() => {
-                // Update odds with slight random variations
-                homeOddsInput.value = (2.0 + Math.random() * 0.5).toFixed(2);
-                drawOddsInput.value = (3.0 + Math.random() * 1.0).toFixed(2);
-                awayOddsInput.value = (2.8 + Math.random() * 0.8).toFixed(2);
+            if (probA + probB + probDraw === 0) {
+                alert('Por favor, insira probabilidades válidas!');
+                return;
+            }
+            
+            // Show loading state
+            elements.calculateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> ANALISANDO...';
+            elements.calculateBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        team_a: teamA,
+                        team_b: teamB,
+                        prob_a: probA,
+                        prob_b: probB,
+                        prob_draw: probDraw
+                    })
+                });
                 
-                refreshBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Dados Atualizados';
+                const data = await response.json();
                 
-                // Reset button after a delay
-                setTimeout(() => {
-                    refreshBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Atualizar Dados';
-                    refreshBtn.disabled = false;
-                }, 2000);
-            }, 1500);
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    alert('Erro: ' + (data.error || 'Erro desconhecido'));
+                }
+            } catch (error) {
+                alert('Erro de conexão: ' + error.message);
+            } finally {
+                elements.calculateBtn.innerHTML = '<i class="fas fa-bolt mr-3 text-xl"></i> CALCULAR PREVISÕES';
+                elements.calculateBtn.disabled = false;
+            }
+        });
+
+        // Display results
+        function displayResults(data) {
+            // Show all sections
+            elements.bestPickBanner.classList.remove('hidden');
+            elements.topRecommendations.classList.remove('hidden');
+            elements.gameAnalysis.classList.remove('hidden');
+            elements.intelProbabilities.classList.remove('hidden');
+            
+            // Update best pick banner
+            elements.bestPickText.textContent = data.analysis.best_pick;
+            elements.bestPickConfidence.textContent = data.analysis.stats.average_confidence + '%';
+            
+            // Update intel probabilities
+            elements.intelHome.textContent = data.analysis.intel_probabilities.home + '%';
+            elements.intelDraw.textContent = data.analysis.intel_probabilities.draw + '%';
+            elements.intelAway.textContent = data.analysis.intel_probabilities.away + '%';
+            
+            // Update game analysis
+            elements.analysisText.textContent = data.analysis.game_analysis;
+            
+            // Display top recommendations
+            displayTopRecommendations(data.analysis.top_recommendations);
+            
+            // Display all markets
+            displayAllMarkets(data.predictions);
+            
+            // Update results count
+            elements.resultsCount.textContent = `${data.predictions.length}/${data.analysis.stats.total_markets} mercados`;
         }
+
+        // Display top recommendations
+        function displayTopRecommendations(recommendations) {
+            elements.recommendationsContainer.innerHTML = '';
+            
+            recommendations.forEach(market => {
+                const priorityClass = `priority-${market.priority.toLowerCase()}`;
+                
+                const stakeClass = market.stake.includes('ALTO') ? 'stake-high' :
+                                market.stake.includes('MÉDIO') ? 'stake-medium' :
+                                market.stake.includes('NORMAL') ? 'stake-normal' : 'stake-low';
+                
+                const card = document.createElement('div');
+                card.className = `market-card ${priorityClass} rounded-xl p-4 fade-in bg-white border border-gray-200`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="font-bold text-gray-800">${market.name}</h3>
+                            <p class="text-xs text-gray-500">${market.description}</p>
+                        </div>
+                        <i class="fas fa-${market.icon} text-lg text-gray-600"></i>
+                    </div>
+                    <div class="mb-3">
+                        <p class="text-sm font-semibold text-gray-700">${market.prediction}</p>
+                    </div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-gray-500">Confiança:</span>
+                        <span class="text-sm font-bold text-gray-800">${market.confidence}%</span>
+                    </div>
+                    <div class="confidence-bar mb-3">
+                        <div class="confidence-fill ${market.confidence >= 70 ? 'bg-green-500' : market.confidence >= 60 ? 'bg-yellow-500' : 'bg-red-500'}" 
+                             style="width: ${market.confidence}%"></div>
+                    </div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs px-2 py-1 rounded ${stakeClass} font-semibold">
+                            ${market.stake}
+                        </span>
+                        <span class="text-xs font-semibold ${market.priority === 'ALTA' ? 'text-green-600' : market.priority === 'MÉDIA' ? 'text-yellow-600' : 'text-gray-600'}">
+                            ${market.priority}
+                        </span>
+                    </div>
+                    <div class="text-xs text-gray-500">
+                        <i class="fas fa-coins mr-1"></i> Odds: ${market.odds}
+                    </div>
+                `;
+                
+                elements.recommendationsContainer.appendChild(card);
+            });
+        }
+
+        // Display all markets
+        function displayAllMarkets(markets) {
+            elements.marketsContainer.innerHTML = '';
+            
+            markets.forEach(market => {
+                const priorityClass = `priority-${market.priority.toLowerCase()}`;
+                
+                const stakeClass = market.stake.includes('ALTO') ? 'stake-high' :
+                                market.stake.includes('MÉDIO') ? 'stake-medium' :
+                                market.stake.includes('NORMAL') ? 'stake-normal' : 'stake-low';
+                
+                const card = document.createElement('div');
+                card.className = `market-card ${priorityClass} rounded-lg p-4 fade-in bg-white border border-gray-200`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-gray-800">${market.name}</h3>
+                            <p class="text-xs text-gray-500">${market.description}</p>
+                        </div>
+                        <i class="fas fa-${market.icon} text-gray-600"></i>
+                    </div>
+                    <div class="mb-3">
+                        <p class="text-sm font-semibold text-gray-700">${market.prediction}</p>
+                    </div>
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs text-gray-500">Confiança:</span>
+                        <span class="text-xs font-bold">${market.confidence}%</span>
+                    </div>
+                    <div class="confidence-bar mb-2">
+                        <div class="confidence-fill ${market.confidence >= 70 ? 'bg-green-500' : market.confidence >= 60 ? 'bg-yellow-500' : 'bg-red-500'}" 
+                             style="width: ${market.confidence}%"></div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs px-2 py-1 rounded ${stakeClass} font-semibold">
+                            ${market.stake}
+                        </span>
+                        <span class="text-xs ${market.priority === 'ALTA' ? 'text-green-600' : market.priority === 'MÉDIA' ? 'text-yellow-600' : 'text-gray-600'} font-semibold">
+                            ${market.priority}
+                        </span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">
+                        <i class="fas fa-coins mr-1"></i> ${market.odds}
+                    </div>
+                `;
+                
+                elements.marketsContainer.appendChild(card);
+            });
+        }
+
+        // Update online count and time
+        function updateOnlineCount() {
+            const baseCount = 2847;
+            const variation = Math.floor(Math.random() * 100) - 50;
+            elements.onlineCount.textContent = (baseCount + variation).toLocaleString();
+        }
+
+        function updateCurrentTime() {
+            const now = new Date();
+            elements.currentTime.textContent = now.toLocaleTimeString();
+        }
+
+        // Socket.io events
+        socket.on('connection_established', (data) => {
+            console.log('Connected to server:', data.message);
+        });
+
+        // Initialize
+        updateProbSum();
+        updateOnlineCount();
+        updateCurrentTime();
+        
+        setInterval(updateOnlineCount, 8000);
+        setInterval(updateCurrentTime, 1000);
+
+        // Load system stats periodically
+        async function loadSystemStats() {
+            try {
+                const response = await fetch('/api/system_stats');
+                const data = await response.json();
+                
+                elements.systemStats.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center p-3 bg-green-50 rounded-lg">
+                            <div class="text-2xl font-bold text-green-600">${data.online_users}</div>
+                            <div class="text-xs text-green-700">Utilizadores Online</div>
+                        </div>
+                        <div class="text-center p-3 bg-blue-50 rounded-lg">
+                            <div class="text-2xl font-bold text-blue-600">${data.predictions_today}</div>
+                            <div class="text-xs text-blue-700">Previsões Hoje</div>
+                        </div>
+                        <div class="text-center p-3 bg-purple-50 rounded-lg">
+                            <div class="text-2xl font-bold text-purple-600">${data.success_rate}%</div>
+                            <div class="text-xs text-purple-700">Taxa de Sucesso</div>
+                        </div>
+                        <div class="text-center p-3 bg-orange-50 rounded-lg">
+                            <div class="text-2xl font-bold text-orange-600">${data.total_markets}</div>
+                            <div class="text-xs text-orange-700">Mercados</div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading system stats:', error);
+            }
+        }
+
+        // Load system stats every 30 seconds
+        setInterval(loadSystemStats, 30000);
+        loadSystemStats();
     </script>
 </body>
 </html>
